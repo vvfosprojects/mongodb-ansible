@@ -1,0 +1,64 @@
+- include_vars: secrets.yml
+
+- name: "Set root password"
+  shell: "passwd --stdin root <<< \"{{root_pass}}\""
+  no_log: True
+
+- name: Disable DNS lookup
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?UseDNS"
+    line: "UseDNS no"
+  register: ssh_usedns_disable
+
+- name: Disable GSSAPI
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#?GSSAPIAuthentication"
+    line: "GSSAPIAuthentication no"
+  register: ssh_gssapi_disable
+
+- name: Restart SSHD
+  service:
+    name: sshd
+    state: restarted
+  when:
+  - ssh_gssapi_disable is succeeded
+  - ssh_usedns_disable is succeeded
+
+- name: Install EPEL
+  yum:
+    pkg: epel-release
+    state: installed
+    update_cache: true
+  register: install_epel
+
+- name: Enable sudo autocompletition
+  blockinfile:
+    path: .bashrc
+    block: |
+      complete -cf sudo
+
+- name: Install basic utilities
+  yum:
+    pkg: "{{item}}"
+    state: installed
+    update_cache: true
+  register: install_utils
+  when: install_epel is succeeded
+  with_items:
+    - wget
+    - dstat
+    - tree
+    - telnet
+    - tcpdump
+    - vim
+    - yum-utils
+    - nano
+    - htop
+
+- name: Disable firewalld
+  service:
+    name: firewalld
+    state: stopped
+    enabled: no

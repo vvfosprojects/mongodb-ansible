@@ -1,0 +1,119 @@
+---
+- name: Install EPEL
+  yum:
+    pkg: epel-release
+    state: installed
+    update_cache: true
+
+- name: Install basic utilities
+  yum:
+    pkg: "{{item}}"
+    state: installed
+    update_cache: true
+  with_items:
+    - lvm2
+    - yum-utils
+    - device-mapper-persistent-data
+
+- name: "Check if {{raw_device}} exists"
+  stat:
+    path: "{{raw_device}}"
+  register: rawdevice
+
+- block:
+
+  - name: Create partition
+    parted:
+      device: "{{raw_device}}"
+      number: 1
+      state: present
+      part_start: 0%
+      part_end: 100%
+
+  when: not use_lvm and rawdevice.stat.exists == True
+
+- block:
+
+  - name: Create partition for LVM
+    parted:
+      device: "{{raw_device}}"
+      number: 1
+      flags: [ lvm ]
+      state: present
+      part_start: 0%
+      part_end: 100%
+
+  - name: Create volume group
+    lvg:
+      vg: vg0
+      pvs: "{{raw_device}}1"
+      state: present
+
+  - name: Create logical volume
+    lvol:
+      vg: vg0
+      lv: lv0
+      size: 100%VG
+      active: yes
+      state: present
+
+  when: use_lvm and rawdevice.stat.exists == True
+
+- name: "Check if {{target_volume}} exists"
+  stat:
+    path: "{{target_volume}}"
+  register: target_vol
+
+- fail:
+    msgr: "{{target_volume}} is absent"
+  when: target_vol.stat.exists == false
+
+- name: Format volume with XFS
+  filesystem: 
+    fstype: xfs 
+    dev: "{{target_volume}}"
+    force: no
+
+- name: "Check if {{mount_point}} is a mount point"
+  shell: |
+    mountpoint -q {{mount_point}}
+  ignore_errors: true
+  register: mountpoint_is_a_mountpoint
+
+- name: "Check if {{mount_point}} is empty"
+  shell: test "$(ls {{mount_point}})"
+  register: mountpoint_is_empty
+  changed_when: false
+  ignore_errors: true
+
+- name: "Mount new partition in /mnt (warning: complex script here)"
+  shell: |
+    umount {{target_volume}} || true;
+    mount {{target_volume}} /mnt;
+    mv {{mount_point}}/* /mnt/;
+    umount /mnt;
+  when: target_vol.stat.exists == true and (mountpoint_is_a_mountpoint.rc != 0  or (mountpoint_is_a_mountpoint.rc == 0 and mountpoint_is_empty.rc == 1 ))
+
+- name: "Ensure {{mount_point}} directory"
+  file:
+    owner: root
+    path: "{{mount_point}}"
+    state: directory
+    mode: 0775
+
+- name: Edit fstab and mount the XFS volume
+  mount:
+    name: "{{mount_point}}"
+    src: "{{target_volume}}"
+    fstype: xfs
+    opts: "noatime"
+    state: mounted
+  register: volume_mount
+
+- name: "Change {{mount_point}} directory permissions"
+  file:
+    owner: root
+    path: "{{mount_point}}"
+    state: directory
+    mode: 0775
+  when: volume_mount.changed

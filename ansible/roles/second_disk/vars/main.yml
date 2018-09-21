@@ -1,0 +1,4 @@
+raw_device: "/dev/{{var_name}}"
+lvm_target: "/dev/vg0/lv0"
+first_raw_partition: "{{raw_device}}1"
+target_volume: "{{lvm_target if use_lvm else first_raw_partition}}"

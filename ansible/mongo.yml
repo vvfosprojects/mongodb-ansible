@@ -1,0 +1,33 @@
+- hosts: mongo
+  roles:
+    - base
+    - mongodb_repo
+
+- hosts: mongo_replicaset
+  vars:
+    replicaset_enabled: True
+    optimize_OS_mongodb: True
+    var_name: vdb
+    mount_point: /var/lib/mongodb
+    use_lvm: true
+  roles:
+    - second_disk
+    - mongodb
+
+- hosts: mongo_delayed_replica
+  vars:
+    replicaset_enabled: True
+    optimize_OS_mongodb: True
+    var_name: vdb
+    mount_point: /var/lib/mongodb
+    use_lvm: true
+    replica_delay: 3600
+  roles:
+    - second_disk
+    - mongodb
+
+- hosts: mongo_arbiter
+  vars:
+    replicaset_enabled: True
+  roles:
+    - mongodb_arbiter

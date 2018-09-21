@@ -1,0 +1,21 @@
+- name: Enable MongoDB Yum Repo
+  copy:
+    src: mongodb-org-3.6.repo
+    dest: /etc/yum.repos.d/mongodb-org-3.6.repo
+    mode: 0644
+
+- name: Install MongoDB
+  yum:
+    pkg: "{{item}}"
+    state: installed
+    update_cache: true
+  with_items:
+    - mongodb-org-3.6.6
+  register: install_mongodb
+
+- name: Stop and disable mongod service
+  service:
+    name: mongod
+    state: stopped
+    enabled: no
+  when: install_mongodb.changed

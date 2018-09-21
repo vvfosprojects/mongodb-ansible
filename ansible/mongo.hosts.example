@@ -1,0 +1,23 @@
+[all:vars]
+ansible_user=centos
+play_environment=staging
+
+[mongo:vars]
+replicaset_name=<PUT RS NAME HERE>
+
+[mongo:children]
+mongo_replicaset
+mongo_arbiter
+mongo_delayed_replica
+
+[mongo_replicaset]
+# PUT YOUR HOSTS HERE
+# ONE HOST PER LINE
+
+[mongo_arbiter]
+# PUT YOUR HOSTS HERE
+# ONE HOST PER LINE
+
+[mongo_delayed_replica]
+# PUT YOUR HOSTS HERE
+# ONE HOST PER LINE

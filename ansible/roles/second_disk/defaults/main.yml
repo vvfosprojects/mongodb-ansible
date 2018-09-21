@@ -1,0 +1,3 @@
+var_name: vdb
+mount_point: /var/lib/docker
+use_lvm: false

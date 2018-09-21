@@ -1,0 +1,36 @@
+- name: Reconfigure MongoDB to listen on all interfaces
+  lineinfile:
+    path: /etc/mongod.conf
+    regexp: '^  bindIp:'
+    line: "  bindIp: 0.0.0.0"
+  register: mongodb_config
+
+- name: Start and enable mongod service
+  service:
+    name: mongod
+    state: started
+    enabled: yes
+  register: mongod_status
+
+- name: Restart MongoDB
+  service:
+    name: mongod
+    state: restarted
+  when: mongodb_config.changed
+
+- name: Add ReplicaSet to MongoDB configuration
+  blockinfile:
+    path: /etc/mongod.conf
+    marker: "### {mark} ANSIBLE MANAGED BLOCK ReplicaSet of MongoDB"
+    block: "replication.replSetName: {{replicaset_name}}"
+  register: mongodb_config
+
+- name: Restart MongoDB
+  service:
+    name: mongod
+    state: restarted
+  when: mongodb_config.changed
+
+- name: Add MongoDB Arbiter to ReplicaSet
+  shell: |
+    /usr/bin/mongo --eval 'rs.addArb("{{ inventory_hostname }}:27017");' --host "{{replicaset_name}}/{{groups.mongo_replicaset|join(',')}}"
