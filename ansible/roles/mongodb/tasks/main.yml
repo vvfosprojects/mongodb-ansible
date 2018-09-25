@@ -53,8 +53,8 @@
       when: inventory_hostname == groups.mongo_delayed_replica[0]
 
     - name: Add rest of ReplicaSet members
-      shell: /usr/bin/mongo --eval 'rs.add("{{ inventory_hostname }}:27017");' --host "{{groups.mongo_replicaset[0]}}"
-      delegate_to: "{{groups.mongo_replicaset[0]}}"
+      shell: |
+        /usr/bin/mongo --eval 'rs.add("{{ inventory_hostname }}:27017");' --host "{{groups.mongo_replicaset[0]}}"
     when: rs_status.stdout_lines[-1] == "0" # no RS set yet
 
   - block:
