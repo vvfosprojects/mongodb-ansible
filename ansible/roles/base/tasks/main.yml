@@ -22,9 +22,7 @@
   service:
     name: sshd
     state: restarted
-  when:
-  - ssh_gssapi_disable is succeeded
-  - ssh_usedns_disable is succeeded
+  when: ssh_gssapi_disable is changed or ssh_usedns_disable is changed
 
 - name: Install EPEL
   yum:
