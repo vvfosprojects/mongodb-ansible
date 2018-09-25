@@ -12,6 +12,10 @@ Configures a single server or a cluster with MongoDB.
 * `replicaset_enabled`: set to `true` to enable cluster mode when you want install multi-host MongoDB (ReplicaSet)
 * `optimize_OS_mongodb`: set to `true` to enable system optimization for MongoDB instances
 * `replicaset_name`: set the name of replicaset. es: 'gl_rs_01'
+* `replica_delay`: enables a delay in the replication of a secondary, in seconds (es: 300)
+
+## mongo_arbiter
+Sets server as MongoDB Arbiter, with no data and just voting capabilities. Do not use in conjuction with `mongodb` role.
 
 ## second_disk
 Handy role to configure and mount a second drive, since this is the most common case.
